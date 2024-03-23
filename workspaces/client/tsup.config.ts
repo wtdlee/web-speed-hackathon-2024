@@ -42,8 +42,7 @@ export default defineConfig(async (): Promise<Options[]> => {
             process: false,
           },
           polyfills: {
-            events: true,
-            fs: true,
+            fs: false,
             path: true,
           },
         }),
@@ -52,16 +51,17 @@ export default defineConfig(async (): Promise<Options[]> => {
       loader: {
         '.json?file': 'file',
         '.wasm': 'binary',
+        '.webp': 'file',
       },
-      metafile: true,
-      minify: false,
+      metafile: false,
+      minify: true,
       outDir: OUTPUT_DIR,
       platform: 'browser',
       shims: true,
-      sourcemap: 'inline',
-      splitting: false,
+      sourcemap: false,
+      splitting: true,
       target: ['chrome58', 'firefox57', 'safari11', 'edge18'],
-      treeshake: false,
+      treeshake: true,
     },
   ];
 });
