@@ -9,6 +9,7 @@ export const GlobalStyle = createGlobalStyle`
   body {
     background-color: ${Color.MONO_A};
     font-display: swap;
+    min-height: 100vh;
   }
 
   a {
