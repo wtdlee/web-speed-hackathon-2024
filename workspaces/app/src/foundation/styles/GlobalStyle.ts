@@ -8,6 +8,7 @@ export const GlobalStyle = createGlobalStyle`
 
   body {
     background-color: ${Color.MONO_A};
+    font-display: swap;
   }
 
   a {
