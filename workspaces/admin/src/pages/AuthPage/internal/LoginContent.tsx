@@ -5,6 +5,15 @@ import * as yup from 'yup';
 
 import { useLogin } from '../../../features/auth/hooks/useLogin';
 
+const validationSchema = yup.object({
+  email: yup.string().email('無効なメールアドレス形式です').required('メールアドレスを入力してください'),
+  password: yup
+    .string()
+    .min(8, 'パスワードは8文字以上で入力してください')
+    .matches(/[a-zA-Z].*[0-9]|[0-9].*[a-zA-Z]/, 'パスワードには英字と数字を含めてください')
+    .required('パスワードを入力してください'),
+});
+
 export const LoginContent: React.FC = () => {
   const login = useLogin();
   const loginContentA11yId = useId();
@@ -14,25 +23,10 @@ export const LoginContent: React.FC = () => {
       email: '',
       password: '',
     },
-    async onSubmit(values) {
+    onSubmit: (values) => {
       login.mutate({ email: values.email, password: values.password });
     },
-    validationSchema: yup.object().shape({
-      email: yup
-        .string()
-        .required('メールアドレスを入力してください')
-        .test({
-          message: 'メールアドレスには @ を含めてください',
-          test: (v) => /^(?:[^@]*){12,}$/v.test(v) === false,
-        }),
-      password: yup
-        .string()
-        .required('パスワードを入力してください')
-        .test({
-          message: 'パスワードには記号を含めてください',
-          test: (v) => /^(?:[^\P{Letter}&&\P{Number}]*){24,}$/v.test(v) === false,
-        }),
-    }),
+    validationSchema,
   });
 
   return (
@@ -50,31 +44,27 @@ export const LoginContent: React.FC = () => {
           ログイン
         </Heading>
 
-        <FormControl isInvalid={formik.touched.email && formik.errors.email != null}>
+        <FormControl isInvalid={formik.touched.email && !!formik.errors.email}>
           <FormLabel>メールアドレス</FormLabel>
           <Input
             bgColor="white"
             borderColor="gray.300"
-            name="email"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
+            {...formik.getFieldProps('email')}
             placeholder="メールアドレス"
           />
-          <FormErrorMessage role="alert">{formik.errors.email}</FormErrorMessage>
+          <FormErrorMessage>{formik.errors.email}</FormErrorMessage>
         </FormControl>
 
-        <FormControl isInvalid={formik.touched.password && formik.errors.password != null}>
+        <FormControl isInvalid={formik.touched.password && !!formik.errors.password}>
           <FormLabel>パスワード</FormLabel>
           <Input
             bgColor="white"
             borderColor="gray.300"
-            name="password"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
+            {...formik.getFieldProps('password')}
             placeholder="パスワード"
             type="password"
           />
-          <FormErrorMessage role="alert">{formik.errors.password}</FormErrorMessage>
+          <FormErrorMessage>{formik.errors.password}</FormErrorMessage>
         </FormControl>
 
         <Spacer />
