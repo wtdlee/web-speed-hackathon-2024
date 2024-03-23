@@ -16,57 +16,44 @@ import { getDayOfWeekStr } from '@wsh-2024/app/src/lib/date/getDayOfWeekStr';
 
 import { INDEX_HTML_PATH } from '../../constants/paths';
 
-const app = new Hono();
-
 async function createInjectDataStr(): Promise<Record<string, unknown>> {
+  const dayOfWeek = getDayOfWeekStr(new Date());
+
+  const releasesPromise = releaseApiClient.fetch({ params: { dayOfWeek } }).then((releases) => ({
+    data: releases,
+    key: unstable_serialize(releaseApiClient.fetch$$key({ params: { dayOfWeek } })),
+  }));
+
+  const featuresPromise = featureApiClient.fetchList({ query: {} }).then((features) => ({
+    data: features,
+    key: unstable_serialize(featureApiClient.fetchList$$key({ query: {} })),
+  }));
+
+  const rankingPromise = rankingApiClient.fetchList({ query: {} }).then((ranking) => ({
+    data: ranking,
+    key: unstable_serialize(rankingApiClient.fetchList$$key({ query: {} })),
+  }));
+
+  const results = await Promise.all([releasesPromise, featuresPromise, rankingPromise]);
+
   const json: Record<string, unknown> = {};
-
-  {
-    const dayOfWeek = getDayOfWeekStr(new Date());
-    const releases = await releaseApiClient.fetch({ params: { dayOfWeek } });
-    json[unstable_serialize(releaseApiClient.fetch$$key({ params: { dayOfWeek } }))] = releases;
-  }
-
-  {
-    const features = await featureApiClient.fetchList({ query: {} });
-    json[unstable_serialize(featureApiClient.fetchList$$key({ query: {} }))] = features;
-  }
-
-  {
-    const ranking = await rankingApiClient.fetchList({ query: {} });
-    json[unstable_serialize(rankingApiClient.fetchList$$key({ query: {} }))] = ranking;
-  }
+  results.forEach(({ data, key }) => {
+    json[key] = data;
+  });
 
   return json;
 }
 
-async function createHTML({
-  body,
-  injectData,
-  styleTags,
-}: {
-  body: string;
-  injectData: Record<string, unknown>;
-  styleTags: string;
-}): Promise<string> {
-  const htmlContent = await fs.readFile(INDEX_HTML_PATH, 'utf-8');
+let cachedHTMLContent: string | null = null;
 
-  const content = htmlContent
-    .replaceAll('<div id="root"></div>', `<div id="root">${body}</div>`)
-    .replaceAll('<style id="tag"></style>', styleTags)
-    .replaceAll(
-      '<script id="inject-data" type="application/json"></script>',
-      `<script id="inject-data" type="application/json">
-        ${jsesc(injectData, {
-          isScriptContext: true,
-          json: true,
-          minimal: true,
-        })}
-      </script>`,
-    );
-
-  return content;
+async function getHTMLTemplate() {
+  if (!cachedHTMLContent) {
+    cachedHTMLContent = await fs.readFile(INDEX_HTML_PATH, 'utf-8');
+  }
+  return cachedHTMLContent;
 }
+
+const app = new Hono();
 
 app.get('*', async (c) => {
   const injectData = await createInjectDataStr();
@@ -82,14 +69,39 @@ app.get('*', async (c) => {
     );
 
     const styleTags = sheet.getStyleTags();
-    const html = await createHTML({ body, injectData, styleTags });
+    const htmlContent = await getHTMLTemplate();
+    const html = createHTML({ body, htmlContent, injectData, styleTags });
 
     return c.html(html);
-  } catch (cause) {
-    throw new HTTPException(500, { cause, message: 'SSR error.' });
+  } catch (error) {
+    console.error(error);
+    throw new HTTPException(500);
   } finally {
     sheet.seal();
   }
 });
+
+function createHTML({
+  body,
+  htmlContent,
+  injectData,
+  styleTags,
+}: {
+  body: string;
+  htmlContent: string;
+  injectData: Record<string, unknown>;
+  styleTags: string;
+}) {
+  return htmlContent
+    .replace('<div id="root"></div>', `<div id="root">${body}</div>`)
+    .replace('<style id="styles"></style>', styleTags)
+    .replace(
+      '<script id="initial-data" type="application/json"></script>',
+      `<script id="initial-data" type="application/json">${jsesc(injectData, {
+        isScriptContext: true,
+        json: true,
+      })}</script>`,
+    );
+}
 
 export { app as ssrApp };
