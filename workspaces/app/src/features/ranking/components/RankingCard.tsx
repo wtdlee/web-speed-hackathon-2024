@@ -8,7 +8,8 @@ import { Image } from '../../../foundation/components/Image';
 import { Link } from '../../../foundation/components/Link';
 import { Separator } from '../../../foundation/components/Separator';
 import { Text } from '../../../foundation/components/Text';
-import { Color, Radius, Space, Typography } from '../../../foundation/styles/variables';
+import { useImage } from '../../../foundation/hooks/useImage';
+import { Color, Radius, Typography } from '../../../foundation/styles/variables';
 import { useBook } from '../../book/hooks/useBook';
 
 const _Wrapper = styled.li`
@@ -42,17 +43,20 @@ type Props = {
 const RankingCard: React.FC<Props> = ({ bookId }) => {
   const { data: book } = useBook({ params: { bookId } });
 
+  const imageUrl = useImage({ height: 96, imageId: book.image.id, width: 96 });
+  const authorImageUrl = useImage({ height: 32, imageId: book.author.image.id, width: 32 });
+
   return (
     <_Wrapper>
       <_Link href={`/books/${book.id}`}>
-        <Flex align="flex-start" gap={Space * 2.5} justify="flex-start" pb={12} pt={12}>
+        <Flex align="flex-start" gap={20} justify="flex-start" pb={12} pt={12}>
           {book.image.id != null && (
             <_ImgWrapper>
-              <Image alt={book.name} height={96} objectFit="cover" src={`/images/${book.image.id}.webp`} width={96} />
+              <Image alt={book.name} height={96} objectFit="cover" src={imageUrl} width={96} />
             </_ImgWrapper>
           )}
           <Box width="100%">
-            <Flex align="flex-start" direction="column" gap={Space * 1} justify="flex-start">
+            <Flex align="flex-start" direction="column" gap={8} justify="flex-start">
               <Text color={Color.MONO_100} typography={Typography.NORMAL16} weight="bold">
                 {book.name}
               </Text>
@@ -61,14 +65,14 @@ const RankingCard: React.FC<Props> = ({ bookId }) => {
               </Text>
             </Flex>
 
-            <Flex align="center" gap={Space * 1} justify="flex-end" pt={8}>
+            <Flex align="center" gap={8} justify="flex-end" pt={8}>
               {book.author.image.id != null && (
                 <_AvatarWrapper>
                   <Image
                     alt={`${book.author.name}のアイコン`}
                     height={32}
                     objectFit="cover"
-                    src={`/images/${book.author.image.id}.webp`}
+                    src={authorImageUrl}
                     width={32}
                   />
                 </_AvatarWrapper>

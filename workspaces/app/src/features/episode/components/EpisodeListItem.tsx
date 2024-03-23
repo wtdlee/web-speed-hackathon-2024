@@ -8,7 +8,7 @@ import { Separator } from '../../../foundation/components/Separator';
 import { Spacer } from '../../../foundation/components/Spacer';
 import { Text } from '../../../foundation/components/Text';
 import { useImage } from '../../../foundation/hooks/useImage';
-import { Color, Radius, Space, Typography } from '../../../foundation/styles/variables';
+import { Color, Space, Typography } from '../../../foundation/styles/variables';
 import { useEpisode } from '../hooks/useEpisode';
 
 const _Wrapper = styled.li`
@@ -23,7 +23,7 @@ const _ImgWrapper = styled.div`
   width: 96px;
   height: 96px;
   > img {
-    border-radius: ${Radius.SMALL};
+    border-radius: 8px;
   }
 `;
 
