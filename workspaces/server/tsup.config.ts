@@ -21,15 +21,18 @@ export default defineConfig(async (): Promise<Options[]> => {
         NODE_ENV: process.env['NODE_ENV'] || 'development',
       },
       format: 'cjs',
-      metafile: true,
-      minify: false,
+      loader: {
+        '.webp': 'file',
+      },
+      metafile: false,
+      minify: true,
       noExternal: [/@wsh-2024\/.*/],
       outDir: OUTPUT_DIR,
       shims: true,
       sourcemap: true,
-      splitting: false,
+      splitting: true,
       target: 'node18',
-      treeshake: false,
+      treeshake: true,
     },
   ];
 });
