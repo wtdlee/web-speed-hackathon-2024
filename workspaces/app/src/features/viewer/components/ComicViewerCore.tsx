@@ -220,7 +220,7 @@ const ComicViewerCore: React.FC<Props> = ({ episodeId }) => {
 
 const ComicViewerCoreWithSuspense: React.FC<Props> = ({ episodeId }) => {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<></>}>
       <ComicViewerCore episodeId={episodeId} />
     </Suspense>
   );
