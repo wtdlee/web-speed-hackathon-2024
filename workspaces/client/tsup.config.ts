@@ -42,7 +42,7 @@ export default defineConfig(async (): Promise<Options[]> => {
             process: false,
           },
           polyfills: {
-            fs: false,
+            fs: true,
             path: true,
           },
         }),

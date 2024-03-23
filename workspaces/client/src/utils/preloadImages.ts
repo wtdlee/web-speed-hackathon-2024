@@ -15,7 +15,6 @@ export async function preloadImages(): Promise<void> {
     .forEach((imagePath) => preloadImage(imagePath));
 }
 
-// 개별 이미지를 미리 로드하는 비동기 함수입니다.
 async function preloadImage(imagePath: string): Promise<void> {
   return new Promise((resolve) => {
     const link = document.createElement('link');
