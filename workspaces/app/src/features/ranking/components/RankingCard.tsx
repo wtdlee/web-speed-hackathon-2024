@@ -7,9 +7,7 @@ import { Flex } from '../../../foundation/components/Flex';
 import { Image } from '../../../foundation/components/Image';
 import { Link } from '../../../foundation/components/Link';
 import { Separator } from '../../../foundation/components/Separator';
-import { Spacer } from '../../../foundation/components/Spacer';
 import { Text } from '../../../foundation/components/Text';
-import { useImage } from '../../../foundation/hooks/useImage';
 import { Color, Radius, Space, Typography } from '../../../foundation/styles/variables';
 import { useBook } from '../../book/hooks/useBook';
 
@@ -44,17 +42,13 @@ type Props = {
 const RankingCard: React.FC<Props> = ({ bookId }) => {
   const { data: book } = useBook({ params: { bookId } });
 
-  const imageUrl = useImage({ height: 96, imageId: book.image.id, width: 96 });
-  const authorImageUrl = useImage({ height: 32, imageId: book.author.image.id, width: 32 });
-
   return (
     <_Wrapper>
       <_Link href={`/books/${book.id}`}>
-        <Spacer height={Space * 1.5} />
-        <Flex align="flex-start" gap={Space * 2.5} justify="flex-start">
-          {imageUrl != null && (
+        <Flex align="flex-start" gap={Space * 2.5} justify="flex-start" pb={12} pt={12}>
+          {book.image.id != null && (
             <_ImgWrapper>
-              <Image alt={book.name} height={96} objectFit="cover" src={imageUrl} width={96} />
+              <Image alt={book.name} height={96} objectFit="cover" src={`/images/${book.image.id}.webp`} width={96} />
             </_ImgWrapper>
           )}
           <Box width="100%">
@@ -67,16 +61,14 @@ const RankingCard: React.FC<Props> = ({ bookId }) => {
               </Text>
             </Flex>
 
-            <Spacer height={Space * 1} />
-
-            <Flex align="center" gap={Space * 1} justify="flex-end">
-              {authorImageUrl != null && (
+            <Flex align="center" gap={Space * 1} justify="flex-end" pt={8}>
+              {book.author.image.id != null && (
                 <_AvatarWrapper>
                   <Image
                     alt={`${book.author.name}のアイコン`}
                     height={32}
                     objectFit="cover"
-                    src={authorImageUrl}
+                    src={`/images/${book.author.image.id}.webp`}
                     width={32}
                   />
                 </_AvatarWrapper>
@@ -86,9 +78,7 @@ const RankingCard: React.FC<Props> = ({ bookId }) => {
               </Text>
             </Flex>
 
-            <Spacer height={Space * 1} />
-
-            <Flex align="center" justify="flex-end">
+            <Flex align="center" justify="flex-end" pt={8}>
               <Text color={Color.Secondary} typography={Typography.NORMAL14} weight="bold">
                 この漫画を読む
               </Text>
@@ -96,7 +86,6 @@ const RankingCard: React.FC<Props> = ({ bookId }) => {
             </Flex>
           </Box>
         </Flex>
-        <Spacer height={Space * 1.5} />
         <Separator />
       </_Link>
     </_Wrapper>
