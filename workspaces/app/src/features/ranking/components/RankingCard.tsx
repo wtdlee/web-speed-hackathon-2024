@@ -94,7 +94,7 @@ const RankingCard: React.FC<Props> = ({ bookId }) => {
 
 const RankingCardWithSuspense: React.FC<Props> = (props) => {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<></>}>
       <RankingCard {...props} />
     </Suspense>
   );

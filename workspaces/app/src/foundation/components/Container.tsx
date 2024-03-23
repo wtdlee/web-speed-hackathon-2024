@@ -1,13 +1,13 @@
 import React from 'react';
 import styled from 'styled-components';
 
-import { BreakPoint, Color } from '../styles/variables';
+import { Color } from '../styles/variables';
 
 const _Container = styled.div`
   min-height: 100vh;
   width: 100%;
   margin: 0 auto;
-  max-width: ${BreakPoint.MOBILE}px;
+  max-width: 1024px;
   display: grid;
   grid-template-columns: 100%;
   grid-template-rows: auto 1fr auto;

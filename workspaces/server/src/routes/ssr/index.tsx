@@ -16,6 +16,8 @@ import { getDayOfWeekStr } from '@wsh-2024/app/src/lib/date/getDayOfWeekStr';
 
 import { INDEX_HTML_PATH } from '../../constants/paths';
 
+const app = new Hono();
+
 async function createInjectDataStr(): Promise<Record<string, unknown>> {
   const dayOfWeek = getDayOfWeekStr(new Date());
 
@@ -44,17 +46,6 @@ async function createInjectDataStr(): Promise<Record<string, unknown>> {
   return json;
 }
 
-let cachedHTMLContent: string | null = null;
-
-async function getHTMLTemplate() {
-  if (!cachedHTMLContent) {
-    cachedHTMLContent = await fs.readFile(INDEX_HTML_PATH, 'utf-8');
-  }
-  return cachedHTMLContent;
-}
-
-const app = new Hono();
-
 app.get('*', async (c) => {
   const injectData = await createInjectDataStr();
   const sheet = new ServerStyleSheet();
@@ -69,8 +60,7 @@ app.get('*', async (c) => {
     );
 
     const styleTags = sheet.getStyleTags();
-    const htmlContent = await getHTMLTemplate();
-    const html = createHTML({ body, htmlContent, injectData, styleTags });
+    const html = createHTML({ body, injectData, styleTags });
 
     return c.html(html);
   } catch (error) {
@@ -81,27 +71,32 @@ app.get('*', async (c) => {
   }
 });
 
-function createHTML({
+async function createHTML({
   body,
-  htmlContent,
   injectData,
   styleTags,
 }: {
   body: string;
-  htmlContent: string;
   injectData: Record<string, unknown>;
   styleTags: string;
-}) {
-  return htmlContent
-    .replace('<div id="root"></div>', `<div id="root">${body}</div>`)
-    .replace('<style id="styles"></style>', styleTags)
-    .replace(
-      '<script id="initial-data" type="application/json"></script>',
-      `<script id="initial-data" type="application/json">${jsesc(injectData, {
-        isScriptContext: true,
-        json: true,
-      })}</script>`,
+}): Promise<string> {
+  const htmlContent = await fs.readFile(INDEX_HTML_PATH, 'utf-8');
+
+  const content = htmlContent
+    .replaceAll('<div id="root"></div>', `<div id="root">${body}</div>`)
+    .replaceAll('<style id="tag"></style>', styleTags)
+    .replaceAll(
+      '<script id="inject-data" type="application/json"></script>',
+      `<script id="inject-data" type="application/json">
+        ${jsesc(injectData, {
+          isScriptContext: true,
+          json: true,
+          minimal: true,
+        })}
+      </script>`,
     );
+
+  return content;
 }
 
 export { app as ssrApp };

@@ -72,7 +72,7 @@ const BookCard: React.FC<Props> = ({ bookId }) => {
 
 const BookCardWithSuspense: React.FC<Props> = (props) => {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<></>}>
       <BookCard {...props} />
     </Suspense>
   );
