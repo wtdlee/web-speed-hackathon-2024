@@ -12,6 +12,7 @@ import { Text } from './Text';
 
 const _Footer = styled.footer`
   background-color: ${Color.Background};
+  margin-top: auto;
   padding: 8px;
 `;
 

@@ -19,7 +19,7 @@ export default defineConfig(async (): Promise<Options[]> => {
         API_URL: process.env['KOYEB_PUBLIC_DOMAIN']
           ? `https://${process.env['KOYEB_PUBLIC_DOMAIN']}`
           : 'http://localhost:8000',
-        NODE_ENV: process.env['NODE_ENV'] || 'development',
+        NODE_ENV: 'production',
       },
       format: 'cjs',
       loader: {
@@ -30,7 +30,7 @@ export default defineConfig(async (): Promise<Options[]> => {
       noExternal: [/@wsh-2024\/.*/],
       outDir: OUTPUT_DIR,
       shims: true,
-      sourcemap: true,
+      sourcemap: false,
       splitting: true,
       target: 'node20',
       treeshake: true,
