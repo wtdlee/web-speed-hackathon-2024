@@ -1,37 +1,31 @@
 import path from 'path-browserify';
 
-async function wait(milliseconds: number) {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
+export async function preloadImages(): Promise<void> {
+  const pathListString = process.env['PATH_LIST'];
 
-export async function preloadImages() {
-  if (process.env['PATH_LIST'] == null) {
+  if (!pathListString) {
     return;
   }
 
-  const imagePathList: string[] = process.env['PATH_LIST'].split(',').filter((imagePath) => {
-    const extension = path.parse(imagePath).ext.toLowerCase();
-    return ['.bmp', '.jpg', '.jpeg', '.gif', '.png', '.webp', '.avif'].includes(extension);
+  const supportedExtensions = ['.bmp', '.jpg', '.jpeg', '.gif', '.png', '.webp', '.avif'];
+
+  pathListString
+    .split(',')
+    .filter((imagePath) => supportedExtensions.includes(path.extname(imagePath).toLowerCase()))
+    .forEach((imagePath) => preloadImage(imagePath));
+}
+
+// 개별 이미지를 미리 로드하는 비동기 함수입니다.
+async function preloadImage(imagePath: string): Promise<void> {
+  return new Promise((resolve) => {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = imagePath;
+    link.crossOrigin = 'anonymous';
+    link.setAttribute('fetchPriority', 'high');
+    link.onload = () => resolve();
+    link.onerror = () => resolve();
+    document.head.appendChild(link);
   });
-
-  const prefetch = Promise.all(
-    imagePathList.map((imagePath) => {
-      return new Promise((resolve) => {
-        const link = document.createElement('link');
-
-        Object.assign(link, {
-          as: 'image',
-          crossOrigin: 'anonymous',
-          fetchPriority: 'high',
-          href: imagePath,
-          onerror: resolve,
-          onload: resolve,
-          rel: 'preload',
-        });
-        document.head.appendChild(link);
-      });
-    }),
-  );
-
-  await Promise.race([prefetch, wait(5000)]);
 }
