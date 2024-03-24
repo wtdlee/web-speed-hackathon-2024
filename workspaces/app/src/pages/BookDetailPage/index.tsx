@@ -3,7 +3,6 @@ import { Suspense, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import type { RouteParams } from 'regexparam';
 import { styled } from 'styled-components';
-import invariant from 'tiny-invariant';
 
 import { FavoriteBookAtomFamily } from '../../features/book/atoms/FavoriteBookAtomFamily';
 import { useBook } from '../../features/book/hooks/useBook';
@@ -46,8 +45,8 @@ const _AvatarWrapper = styled.div`
 `;
 
 const BookDetailPage: React.FC = () => {
-  const { bookId } = useParams<RouteParams<'/books/:bookId'>>();
-  invariant(bookId);
+  const { bookId: id } = useParams<RouteParams<'/books/:bookId'>>();
+  const bookId = id ?? '';
 
   const { data: book } = useBook({ params: { bookId } });
   const { data: episodeList } = useEpisodeList({ query: { bookId } });

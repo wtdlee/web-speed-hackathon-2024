@@ -1,7 +1,4 @@
-import clamp from 'lodash/clamp';
-import floor from 'lodash/floor';
-import { useState } from 'react';
-import { useInterval, useUpdate } from 'react-use';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 
 import { ComicViewerCore } from '../../../features/viewer/components/ComicViewerCore';
@@ -13,7 +10,7 @@ const IMAGE_HEIGHT = 1518;
 const MIN_VIEWER_HEIGHT = 500;
 const MAX_VIEWER_HEIGHT = 650;
 
-const MIN_PAGE_WIDTH = floor((MIN_VIEWER_HEIGHT / IMAGE_HEIGHT) * IMAGE_WIDTH);
+const MIN_PAGE_WIDTH = Math.floor((MIN_VIEWER_HEIGHT / IMAGE_HEIGHT) * IMAGE_WIDTH);
 
 const _Container = styled.div`
   position: relative;
@@ -34,23 +31,26 @@ type Props = {
 };
 
 export const ComicViewer: React.FC<Props> = ({ episodeId }) => {
-  // 画面のリサイズに合わせて再描画する
-  const rerender = useUpdate();
-  useInterval(rerender, 0);
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [viewerHeight, setViewerHeight] = useState(MIN_VIEWER_HEIGHT);
 
-  const [el, ref] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const handleResize = () => {
+      if (!ref.current) return;
+      const cqw = (ref.current.getBoundingClientRect().width ?? 0) / 100;
+      const pageCountParView = 100 * cqw <= 2 * MIN_PAGE_WIDTH ? 1 : 2;
+      const candidatePageWidth = (100 * cqw) / pageCountParView;
+      const candidatePageHeight = (candidatePageWidth / IMAGE_WIDTH) * IMAGE_HEIGHT;
+      const newViewerHeight = Math.max(MIN_VIEWER_HEIGHT, Math.min(candidatePageHeight, MAX_VIEWER_HEIGHT));
 
-  // コンテナの幅
-  const cqw = (el?.getBoundingClientRect().width ?? 0) / 100;
+      setViewerHeight(newViewerHeight);
+    };
 
-  // 1画面に表示できるページ数（1 or 2）
-  const pageCountParView = 100 * cqw <= 2 * MIN_PAGE_WIDTH ? 1 : 2;
-  // 1ページの幅の候補
-  const candidatePageWidth = (100 * cqw) / pageCountParView;
-  // 1ページの高さの候補
-  const candidatePageHeight = (candidatePageWidth / IMAGE_WIDTH) * IMAGE_HEIGHT;
-  // ビュアーの高さ
-  const viewerHeight = clamp(candidatePageHeight, MIN_VIEWER_HEIGHT, MAX_VIEWER_HEIGHT);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <_Container ref={ref}>

@@ -40,8 +40,7 @@ export const EpisodeListItem: React.FC<Props> = ({ bookId, episodeId }) => {
   return (
     <_Wrapper>
       <_Link href={`/books/${bookId}/episodes/${episode.id}`}>
-        <Spacer height={Space * 1.5} />
-        <Flex align="flex-start" gap={Space * 2.5} justify="flex-start">
+        <Flex align="flex-start" gap={Space * 2.5} justify="flex-start" pb={12} pt={12}>
           {imageUrl != null && (
             <_ImgWrapper>
               <Image alt={episode.name} height={96} objectFit="cover" src={imageUrl} width={96} />
@@ -49,11 +48,10 @@ export const EpisodeListItem: React.FC<Props> = ({ bookId, episodeId }) => {
           )}
           <Box width="100%">
             <Flex align="flex-start" direction="column" gap={Space * 1} justify="flex-start">
-              <Flex align="center" justify="flex-start">
+              <Flex align="center" gap={16} justify="flex-start">
                 <Text color={Color.MONO_100} flexShrink={0} typography={Typography.NORMAL16} weight="bold">
-                  第{episode.chapter}話
+                  {`第${episode.chapter}話`}
                 </Text>
-                <Spacer width={Space * 2} />
                 <Text color={Color.MONO_80} typography={Typography.NORMAL14} weight="bold">
                   {`- ${episode.name} -`}
                 </Text>
@@ -64,7 +62,6 @@ export const EpisodeListItem: React.FC<Props> = ({ bookId, episodeId }) => {
             </Flex>
           </Box>
         </Flex>
-        <Spacer height={Space * 1.5} />
         <Separator />
       </_Link>
     </_Wrapper>
