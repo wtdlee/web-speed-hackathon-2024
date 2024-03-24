@@ -18,14 +18,13 @@ import {
   Tr,
 } from '@chakra-ui/react';
 import { useFormik } from 'formik';
-import { useId, useMemo, useState } from 'react';
-import { create } from 'zustand';
+import { lazy, Suspense, useId, useMemo, useState } from 'react';
 
 import { useBookList } from '../../features/books/hooks/useBookList';
 import { isContains } from '../../lib/filter/isContains';
 
-import { BookDetailModal } from './internal/BookDetailModal';
-import { CreateBookModal } from './internal/CreateBookModal';
+const BookDetailModal = lazy(() => import('./internal/BookDetailModal'));
+const CreateBookModal = lazy(() => import('./internal/CreateBookModal'));
 
 const BookSearchKind = {
   AuthorId: 'AuthorId',
@@ -56,12 +55,6 @@ type BookModalState =
       params: object;
     };
 
-type BookModalAction = {
-  close: () => void;
-  openCreate: () => void;
-  openDetail: (bookId: string) => void;
-};
-
 export const BookListPage: React.FC = () => {
   const { data: bookList = [] } = useBookList();
   const bookListA11yId = useId();
@@ -74,58 +67,42 @@ export const BookListPage: React.FC = () => {
     onSubmit() {},
   });
 
+  const { kind, query } = formik.values;
+
   const filteredBookList = useMemo(() => {
-    if (formik.values.query === '') {
+    if (query === '') {
       return bookList;
     }
 
-    switch (formik.values.kind) {
-      case BookSearchKind.BookId: {
-        return bookList.filter((book) => book.id === formik.values.query);
-      }
-      case BookSearchKind.BookName: {
-        return bookList.filter((book) => {
-          return (
-            isContains({ query: formik.values.query, target: book.name }) ||
-            isContains({ query: formik.values.query, target: book.nameRuby })
-          );
-        });
-      }
-      case BookSearchKind.AuthorId: {
-        return bookList.filter((book) => book.author.id === formik.values.query);
-      }
-      case BookSearchKind.AuthorName: {
-        return bookList.filter((book) => {
-          return isContains({ query: formik.values.query, target: book.author.name });
-        });
-      }
-      default: {
-        formik.values.kind satisfies never;
+    switch (kind) {
+      case 'BookId':
+        return bookList.filter((book) => book.id === query);
+      case 'BookName':
+        return bookList.filter(
+          (book) => isContains({ query, target: book.name }) || isContains({ query, target: book.nameRuby }),
+        );
+      case 'AuthorId':
+        return bookList.filter((book) => book.author.id === query);
+      case 'AuthorName':
+        return bookList.filter((book) => isContains({ query, target: book.author.name }));
+      default:
         return bookList;
-      }
     }
-  }, [formik.values.kind, formik.values.query, bookList]);
+  }, [kind, query, bookList]);
 
-  const [useModalStore] = useState(() => {
-    return create<BookModalState & BookModalAction>()((set) => ({
-      ...{
-        mode: BookModalMode.None,
-        params: {},
-      },
-      ...{
-        close() {
-          set({ mode: BookModalMode.None, params: {} });
-        },
-        openCreate() {
-          set({ mode: BookModalMode.Create, params: {} });
-        },
-        openDetail(bookId) {
-          set({ mode: BookModalMode.Detail, params: { bookId } });
-        },
-      },
-    }));
-  });
-  const modalState = useModalStore();
+  const [modalParams, setModalParams] = useState<BookModalState>({ mode: BookModalMode.None, params: {} });
+
+  const openDetail = (bookId: string) => {
+    setModalParams({ mode: BookModalMode.Detail, params: { bookId } });
+  };
+
+  const openCreate = () => {
+    setModalParams({ mode: BookModalMode.Create, params: {} });
+  };
+
+  const close = () => {
+    setModalParams({ mode: BookModalMode.None, params: {} });
+  };
 
   return (
     <>
@@ -201,7 +178,7 @@ export const BookListPage: React.FC = () => {
             <Text as="h2" fontSize="xl" fontWeight="bold" id={bookListA11yId}>
               作品一覧
             </Text>
-            <Button colorScheme="teal" onClick={() => modalState.openCreate()} variant="solid">
+            <Button colorScheme="teal" onClick={() => openCreate()} variant="solid">
               作品を追加
             </Button>
           </Flex>
@@ -219,7 +196,7 @@ export const BookListPage: React.FC = () => {
                   filteredBookList.map((book) => (
                     <Tr key={book.id}>
                       <Td textAlign="center" verticalAlign="middle">
-                        <Button colorScheme="teal" onClick={() => modalState.openDetail(book.id)} variant="solid">
+                        <Button colorScheme="teal" onClick={() => openDetail(book.id)} variant="solid">
                           詳細
                         </Button>
                       </Td>
@@ -243,10 +220,12 @@ export const BookListPage: React.FC = () => {
         </StackItem>
       </Stack>
 
-      {modalState.mode === BookModalMode.Detail ? (
-        <BookDetailModal isOpen bookId={modalState.params.bookId} onClose={() => modalState.close()} />
-      ) : null}
-      {modalState.mode === BookModalMode.Create ? <CreateBookModal isOpen onClose={() => modalState.close()} /> : null}
+      <Suspense fallback={<></>}>
+        {modalParams.mode === BookModalMode.Detail && (
+          <BookDetailModal isOpen bookId={modalParams.params.bookId} onClose={() => close()} />
+        )}
+        {modalParams.mode === BookModalMode.Create && <CreateBookModal isOpen onClose={() => close()} />}
+      </Suspense>
     </>
   );
 };
