@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { imageApiClient } from '../../images/apiClient/imageApiClient';
 import { episodeApiClient } from '../apiClient/episodeApiClient';
 
-type CreateEpisodePayload = {
+export type CreateEpisodePayload = {
   bookId: string;
   chapter: number;
   description: string;
