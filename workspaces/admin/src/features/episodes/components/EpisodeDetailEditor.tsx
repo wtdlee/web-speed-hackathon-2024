@@ -18,9 +18,10 @@ import {
   Text,
   Textarea,
 } from '@chakra-ui/react';
+import { yupResolver } from '@hookform/resolvers/yup';
 import { useNavigate } from '@tanstack/react-router';
-import { useFormik } from 'formik';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 import { encrypt } from '@wsh-2024/image-encrypt/src/encrypt';
@@ -42,6 +43,22 @@ type Props = {
   episode?: GetEpisodeResponse;
 };
 
+const episodeSchema = yup.object().shape({
+  chapter: yup.number().required('章を入力してください'),
+  description: yup.string().required('あらすじを入力してください'),
+  image: yup
+    .mixed((image): image is File => image instanceof File)
+    .optional()
+    .test('is-supported-image', '対応していない画像形式です', async (image) => {
+      return image == null || (await isSupportedImage(image));
+    }),
+  name: yup.string().required('エピソード名を入力してください'),
+  nameRuby: yup
+    .string()
+    .required('エピソード名（ふりがな）を入力してください')
+    .matches(/^[\p{Script_Extensions=Hiragana}]+$/u, 'ふりがなはひらがなで入力してください'),
+});
+
 export const EpisodeDetailEditor: React.FC<Props> = ({ book, episode }) => {
   const navigate = useNavigate();
 
@@ -51,73 +68,68 @@ export const EpisodeDetailEditor: React.FC<Props> = ({ book, episode }) => {
   const { mutate: createEpisodePage } = useCreateEpisodePage();
   const { mutate: deleteEpisodePage } = useDeleteEpisodePage();
 
-  const formik = useFormik({
-    initialValues: {
+  const {
+    formState: { errors, isSubmitting, isValidating },
+    handleSubmit,
+    register,
+    setValue,
+    watch,
+  } = useForm({
+    defaultValues: {
       chapter: episode?.chapter,
       description: episode?.description,
-      image: undefined as File | undefined,
       name: episode?.name,
       nameRuby: episode?.nameRuby,
     },
-    onSubmit(values) {
-      if (episode == null) {
-        return createEpisode(
-          {
-            bookId: book.id,
-            chapter: values.chapter!,
-            description: values.description!,
-            image: values.image!,
-            name: values.name!,
-            nameRuby: values.nameRuby!,
-          },
-          {
-            onSuccess(episode) {
-              navigate({
-                params: { bookId: book.id, episodeId: episode.id },
-                to: '/admin/books/$bookId/episodes/$episodeId',
-              });
-            },
-          },
-        );
-      } else {
-        return updateEpisode({
-          bookId: book.id,
-          chapter: values.chapter,
-          description: values.description,
-          episodeId: episode.id,
-          image: values.image,
-          name: values.name,
-          nameRuby: values.nameRuby,
-        });
-      }
-    },
-    validationSchema: yup.object().shape({
-      chapter: yup.number().required('章を入力してください'),
-      description: yup.string().required('あらすじを入力してください'),
-      image: yup
-        .mixed((image): image is File => image instanceof File)
-        .optional()
-        .test('is-supported-image', '対応していない画像形式です', async (image) => {
-          return image == null || (await isSupportedImage(image));
-        }),
-      name: yup.string().required('エピソード名を入力してください'),
-      nameRuby: yup
-        .string()
-        .required('エピソード名（ふりがな）を入力してください')
-        .matches(/^[\p{Script_Extensions=Hiragana}]+$/u, 'ふりがなはひらがなで入力してください'),
-    }),
+    resolver: yupResolver(episodeSchema),
   });
 
-  const thumbnailInputRef = useRef<HTMLInputElement>(null);
-  const [thumbnailUrl, updateThumbnailUrl] = useState<string | undefined>(undefined);
-  useEffect(() => {
-    if (formik.values.image == null) return;
-    const url = URL.createObjectURL(formik.values.image);
-    updateThumbnailUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [formik.values.image]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onSubmit = async (values: any) => {
+    if (episode == null) {
+      return createEpisode(
+        {
+          bookId: book.id,
+          chapter: values.chapter!,
+          description: values.description!,
+          image: values.image!,
+          name: values.name!,
+          nameRuby: values.nameRuby!,
+        },
+        {
+          onSuccess(episode) {
+            navigate({
+              params: { bookId: book.id, episodeId: episode.id },
+              to: '/admin/books/$bookId/episodes/$episodeId',
+            });
+          },
+        },
+      );
+    } else {
+      return updateEpisode({
+        bookId: book.id,
+        chapter: values.chapter,
+        description: values.description,
+        episodeId: episode.id,
+        image: values.image,
+        name: values.name,
+        nameRuby: values.nameRuby,
+      });
+    }
+  };
 
-  const handleRequestToDeleteEpisode = () => {
+  const imageFile = watch('image');
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (!imageFile) return;
+    const fileReader = new FileReader();
+    fileReader.onload = () => setThumbnailUrl(fileReader.result as string);
+    fileReader.readAsDataURL(imageFile);
+  }, [imageFile]);
+
+  const handleRequestToDeleteEpisode = useCallback(() => {
     if (episode == null) return;
     deleteEpisode(
       {
@@ -132,7 +144,7 @@ export const EpisodeDetailEditor: React.FC<Props> = ({ book, episode }) => {
         },
       },
     );
-  };
+  }, [book.id, deleteEpisode, episode, navigate]);
 
   const createPageInputRef = useRef<HTMLInputElement>(null);
   const handleRequestToUploadFile = async (file: File | undefined) => {
@@ -241,19 +253,22 @@ export const EpisodeDetailEditor: React.FC<Props> = ({ book, episode }) => {
         </HStack>
       </StackItem>
 
-      <StackItem aria-label="エピソード情報" as="form" onSubmit={formik.handleSubmit}>
+      <StackItem aria-label="エピソード情報" as="form" onSubmit={handleSubmit(onSubmit)}>
         <Flex direction="row" gap={4} justify="space-between">
           <Flex align="center" flexGrow={0} flexShrink={0} justify="center" p={16}>
-            <FormControl isInvalid={!formik.isValidating && formik.touched.image && formik.errors.image != null}>
+            <FormControl isInvalid={!!errors.image}>
               <FormLabel fontSize="lg" fontWeight="bold">
                 サムネイル
               </FormLabel>
               <Input
+                {...register('image')}
                 ref={thumbnailInputRef}
                 hidden
+                multiple={false}
                 name="image"
-                onChange={(ev) => {
-                  formik.setFieldValue('image', ev.target.files?.[0], true);
+                onChange={(e) => {
+                  if (!e.target.files?.[0]) return;
+                  setValue('image', e.target.files?.[0], { shouldValidate: true });
                 }}
                 type="file"
               />
@@ -264,7 +279,6 @@ export const EpisodeDetailEditor: React.FC<Props> = ({ book, episode }) => {
                 borderRadius={16}
                 height={200}
                 onClick={() => {
-                  formik.setFieldTouched('image', true, false);
                   thumbnailInputRef.current?.click();
                 }}
                 overflow="hidden"
@@ -298,63 +312,38 @@ export const EpisodeDetailEditor: React.FC<Props> = ({ book, episode }) => {
                 </Center>
               </Box>
               <FormErrorMessage fontWeight="bold" role="alert">
-                {formik.errors.image}
+                {errors.image?.message}
               </FormErrorMessage>
             </FormControl>
           </Flex>
 
           <Stack flexGrow={1} flexShrink={1} spacing={4}>
-            <FormControl isInvalid={!formik.isValidating && formik.touched.name && formik.errors.name != null}>
+            <FormControl isInvalid={!!errors.name}>
               <FormLabel fontWeight="bold">エピソード名</FormLabel>
-              <Input
-                name="name"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                type="text"
-                value={formik.values.name}
-              />
+              <Input {...register('name')} name="name" type="text" />
               <FormErrorMessage fontWeight="bold" role="alert">
-                {formik.errors.name}
+                {errors.name?.message}
               </FormErrorMessage>
             </FormControl>
-            <FormControl isInvalid={!formik.isValidating && formik.touched.nameRuby && formik.errors.nameRuby != null}>
+            <FormControl isInvalid={!!errors.nameRuby}>
               <FormLabel fontWeight="bold">エピソード名（ふりがな）</FormLabel>
-              <Input
-                name="nameRuby"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                type="text"
-                value={formik.values.nameRuby}
-              />
+              <Input {...register('nameRuby')} name="nameRuby" type="text" />
               <FormErrorMessage fontWeight="bold" role="alert">
-                {formik.errors.nameRuby}
+                {errors.nameRuby?.message}
               </FormErrorMessage>
             </FormControl>
-            <FormControl
-              isInvalid={!formik.isValidating && formik.touched.description && formik.errors.description != null}
-            >
+            <FormControl isInvalid={!!errors.description}>
               <FormLabel fontWeight="bold">あらすじ</FormLabel>
-              <Textarea
-                name="description"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                value={formik.values.description}
-              />
+              <Textarea {...register('description')} name="description" />
               <FormErrorMessage fontWeight="bold" role="alert">
-                {formik.errors.description}
+                {errors.description?.message}
               </FormErrorMessage>
             </FormControl>
-            <FormControl isInvalid={!formik.isValidating && formik.touched.chapter && formik.errors.chapter != null}>
+            <FormControl isInvalid={!!errors.chapter}>
               <FormLabel fontWeight="bold">エピソードの章</FormLabel>
-              <Input
-                name="chapter"
-                onBlur={formik.handleBlur}
-                onChange={formik.handleChange}
-                type="number"
-                value={formik.values.chapter}
-              />
+              <Input {...register('chapter')} name="chapter" type="number" />
               <FormErrorMessage fontWeight="bold" role="alert">
-                {formik.errors.chapter}
+                {errors.chapter?.message}
               </FormErrorMessage>
             </FormControl>
             <Box>
@@ -362,12 +351,7 @@ export const EpisodeDetailEditor: React.FC<Props> = ({ book, episode }) => {
               <Text color="gray.600">{book.id}</Text>
             </Box>
             <Box display="flex" gap={4} justifyContent="flex-end">
-              <Button
-                colorScheme="teal"
-                isDisabled={formik.isValidating || !formik.isValid || formik.isSubmitting}
-                type="submit"
-                variant="solid"
-              >
+              <Button colorScheme="teal" isDisabled={isSubmitting || isValidating} type="submit" variant="solid">
                 {episode == null ? '作成' : '更新'}
               </Button>
               {episode != null && (

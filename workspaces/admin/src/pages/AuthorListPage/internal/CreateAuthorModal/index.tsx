@@ -63,7 +63,6 @@ export const CreateAuthorModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [avatarUrl, updateAvatarUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    console.log('useffiect', imageFile);
     if (!imageFile) return;
     const url = URL.createObjectURL(imageFile);
     updateAvatarUrl(url);
@@ -117,7 +116,6 @@ export const CreateAuthorModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     hidden
                     multiple={false}
                     onChange={(e) => {
-                      console.log(e.target, e.target.files);
                       if (!e.target.files?.[0]) return;
                       setValue('image', e.target.files?.[0], { shouldValidate: true });
                     }}

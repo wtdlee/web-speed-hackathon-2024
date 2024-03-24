@@ -19,7 +19,6 @@ import {
 } from '@chakra-ui/react';
 import { useFormik } from 'formik';
 import { useId, useMemo, useState } from 'react';
-import _ from 'underscore';
 import { create } from 'zustand';
 
 import { useBookList } from '../../features/books/hooks/useBookList';
@@ -216,27 +215,28 @@ export const BookListPage: React.FC = () => {
                 </Tr>
               </Thead>
               <Tbody>
-                {_.map(filteredBookList, (book) => (
-                  <Tr key={book.id}>
-                    <Td textAlign="center" verticalAlign="middle">
-                      <Button colorScheme="teal" onClick={() => modalState.openDetail(book.id)} variant="solid">
-                        詳細
-                      </Button>
-                    </Td>
-                    <Td verticalAlign="middle">
-                      <Text fontWeight="bold">{book.name}</Text>
-                      <Text color="gray.400" fontSize="small">
-                        {book.id}
-                      </Text>
-                    </Td>
-                    <Td verticalAlign="middle">
-                      <Text fontWeight="bold">{book.author.name}</Text>
-                      <Text color="gray.400" fontSize="small">
-                        {book.author.id}
-                      </Text>
-                    </Td>
-                  </Tr>
-                ))}
+                {filteredBookList.length !== 0 &&
+                  filteredBookList.map((book) => (
+                    <Tr key={book.id}>
+                      <Td textAlign="center" verticalAlign="middle">
+                        <Button colorScheme="teal" onClick={() => modalState.openDetail(book.id)} variant="solid">
+                          詳細
+                        </Button>
+                      </Td>
+                      <Td verticalAlign="middle">
+                        <Text fontWeight="bold">{book.name}</Text>
+                        <Text color="gray.400" fontSize="small">
+                          {book.id}
+                        </Text>
+                      </Td>
+                      <Td verticalAlign="middle">
+                        <Text fontWeight="bold">{book.author.name}</Text>
+                        <Text color="gray.400" fontSize="small">
+                          {book.author.id}
+                        </Text>
+                      </Td>
+                    </Tr>
+                  ))}
               </Tbody>
             </Table>
           </TableContainer>
