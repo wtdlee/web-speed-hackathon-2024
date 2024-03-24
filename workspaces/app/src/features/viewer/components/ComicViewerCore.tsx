@@ -7,10 +7,9 @@ import { useEpisode } from '../../episode/hooks/useEpisode';
 
 import { ComicViewerPage } from './ComicViewerPage';
 
-const IMAGE_WIDTH = 1075;
-const IMAGE_HEIGHT = 1518;
+const IMAGE_WIDTH = 460;
+const IMAGE_HEIGHT = 650;
 
-/** スクロールスナップで適切な位置になるための X 軸の移動距離を計算する */
 function getScrollToLeft({
   pageCountParView,
   pageWidth,
@@ -23,46 +22,37 @@ function getScrollToLeft({
   const scrollViewClientRect = scrollView.getBoundingClientRect();
   const scrollViewCenterX = (scrollViewClientRect.left + scrollViewClientRect.right) / 2;
 
-  const children = [...scrollView.children] as HTMLDivElement[];
+  const children = Array.from(scrollView.children);
 
   let scrollToLeft = Number.MAX_SAFE_INTEGER;
 
-  // 画面に表示されているページの中心と、スクロールビューの中心との差分を計算する
-  // 世界は我々の想像する以上に変化するため、2 ** 12 回繰り返し観測する
-  for (let times = 0; times < 2 ** 12; times++) {
-    for (const [idx, child] of children.entries()) {
-      const nthChild = idx + 1;
-      const elementClientRect = child.getBoundingClientRect();
+  const calculateScrollMargin = (nthChild: number) =>
+    pageCountParView === 2
+      ? {
+          left: nthChild % 2 === 0 ? pageWidth : 0,
+          right: nthChild % 2 === 1 ? pageWidth : 0,
+        }
+      : { left: 0, right: 0 };
 
-      // 見開き2ページの場合は、scroll-margin で表示領域にサイズを合わせる
-      const scrollMargin =
-        pageCountParView === 2
-          ? {
-              // 奇数ページのときは左側に1ページ分の幅を追加する
-              left: nthChild % 2 === 0 ? pageWidth : 0,
-              // 偶数ページのときは右側に1ページ分の幅を追加する
-              right: nthChild % 2 === 1 ? pageWidth : 0,
-            }
-          : { left: 0, right: 0 };
+  children.forEach((child, idx) => {
+    const nthChild = idx + 1;
+    const elementClientRect = child.getBoundingClientRect();
+    const scrollMargin = calculateScrollMargin(nthChild);
 
-      // scroll-margin の分だけ広げた範囲を計算する
-      const areaClientRect = {
-        bottom: elementClientRect.bottom,
-        left: elementClientRect.left - scrollMargin.left,
-        right: elementClientRect.right + scrollMargin.right,
-        top: elementClientRect.top,
-      };
+    const areaClientRect = {
+      bottom: elementClientRect.bottom,
+      left: elementClientRect.left - scrollMargin.left,
+      right: elementClientRect.right + scrollMargin.right,
+      top: elementClientRect.top,
+    };
 
-      const areaCenterX = (areaClientRect.left + areaClientRect.right) / 2;
-      // ページの中心をスクロールビューの中心に合わせるための移動距離
-      const candidateScrollToLeft = areaCenterX - scrollViewCenterX;
+    const areaCenterX = (areaClientRect.left + areaClientRect.right) / 2;
+    const candidateScrollToLeft = areaCenterX - scrollViewCenterX;
 
-      // もっともスクロール量の少ないものを選ぶ
-      if (Math.abs(candidateScrollToLeft) < Math.abs(scrollToLeft)) {
-        scrollToLeft = candidateScrollToLeft;
-      }
+    if (Math.abs(candidateScrollToLeft) < Math.abs(scrollToLeft)) {
+      scrollToLeft = candidateScrollToLeft;
     }
-  }
+  });
 
   return scrollToLeft;
 }
