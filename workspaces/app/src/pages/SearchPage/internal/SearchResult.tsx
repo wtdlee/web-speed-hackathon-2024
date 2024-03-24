@@ -1,4 +1,4 @@
-import { Suspense, useMemo } from 'react';
+import { Suspense } from 'react';
 
 import type { GetBookListResponse } from '@wsh-2024/schema/src/api/books/GetBookListResponse';
 
@@ -14,31 +14,31 @@ type Props = {
 };
 
 export const SearchResult: React.FC<Props> = ({ books, keyword }) => {
-  const relatedBooks = useMemo(() => {
+  const relatedBooks = () => {
+    if (!books) return;
     if (keyword === '') {
       return books;
     }
     return books.filter((book) => {
       return isContains({ query: keyword, target: book.name }) || isContains({ query: keyword, target: book.nameRuby });
     });
-  }, [books, keyword]);
+  };
 
   return (
     <Flex align="center" as="ul" direction="column" justify="center">
       <Suspense
         fallback={
           <Text color={Color.MONO_100} typography={Typography.NORMAL14}>
-            「{keyword}」を検索中...
+            {`「${keyword}」を検索中...`}
           </Text>
         }
       >
-        {relatedBooks.map((book) => (
-          <BookListItem key={book.id} bookId={book.id} />
-        ))}
-        {relatedBooks.length === 0 && (
+        {relatedBooks()?.length === 0 ? (
           <Text color={Color.MONO_100} typography={Typography.NORMAL14}>
             関連作品は見つかりませんでした
           </Text>
+        ) : (
+          relatedBooks()?.map((book) => <BookListItem key={book.id} bookId={book.id} />)
         )}
       </Suspense>
     </Flex>

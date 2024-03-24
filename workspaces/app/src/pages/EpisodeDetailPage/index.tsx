@@ -1,7 +1,6 @@
 import { Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import type { RouteParams } from 'regexparam';
-import invariant from 'tiny-invariant';
 
 import { useBook } from '../../features/book/hooks/useBook';
 import { EpisodeListItem } from '../../features/episode/components/EpisodeListItem';
@@ -14,9 +13,9 @@ import { Space } from '../../foundation/styles/variables';
 import { ComicViewer } from './internal/ComicViewer';
 
 const EpisodeDetailPage: React.FC = () => {
-  const { bookId, episodeId } = useParams<RouteParams<'/books/:bookId/episodes/:episodeId'>>();
-  invariant(bookId);
-  invariant(episodeId);
+  const { bookId: bid, episodeId: eid } = useParams<RouteParams<'/books/:bookId/episodes/:episodeId'>>();
+  const bookId = bid ?? '';
+  const episodeId = eid ?? '';
 
   const { data: book } = useBook({ params: { bookId } });
   const { data: episode } = useEpisode({ params: { episodeId } });
