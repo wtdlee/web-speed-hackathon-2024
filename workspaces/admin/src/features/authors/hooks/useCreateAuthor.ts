@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { imageApiClient } from '../../images/apiClient/imageApiClient';
 import { authorApiClient } from '../apiClient/authorApiClient';
 
-type CreateAuthorPayload = {
+export type CreateAuthorPayload = {
   description: string;
   image: File;
   name: string;
