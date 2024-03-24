@@ -21,6 +21,9 @@ export default defineConfig(async (): Promise<Options[]> => {
           : 'http://localhost:8000',
         NODE_ENV: 'production',
       },
+      esbuildOptions(options) {
+        options.treeShaking = true;
+      },
       format: 'cjs',
       loader: {
         '.webp': 'file',

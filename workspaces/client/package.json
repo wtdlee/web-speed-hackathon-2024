@@ -5,7 +5,8 @@
     "build": "pnpm run build:clean && pnpm run build:tsup && pnpm run build:copy",
     "build:clean": "rm -rf ./dist",
     "build:copy": "cp -r ./assets ./dist/assets",
-    "build:tsup": "tsup"
+    "build:tsup": "tsup",
+    "compress": "gzip -9 ./dist/client.global.js"
   },
   "dependencies": {
     "@jsquash/jxl": "1.1.0",
