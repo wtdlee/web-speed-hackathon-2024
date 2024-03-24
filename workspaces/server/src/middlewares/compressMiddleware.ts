@@ -1,33 +1,19 @@
-import { encoding } from '@hapi/accept';
-import { ZstdInit } from '@oneidentity/zstd-js/asm/index.cjs.js';
 import { createMiddleware } from 'hono/factory';
-
-const zstdInit = ZstdInit();
+import { gzip } from 'pako';
 
 export const compressMiddleware = createMiddleware(async (c, next) => {
   await next();
-  const { ZstdStream } = await zstdInit;
 
-  const accept = encoding(c.req.header('X-Accept-Encoding'), ['zstd']);
-
-  switch (accept) {
-    case 'zstd': {
-      const transform = new TransformStream<Uint8Array, Uint8Array>({
-        transform(chunk, controller) {
-          controller.enqueue(ZstdStream.compress(chunk, 12, false));
-        },
-      });
-
-      c.res = new Response(c.res.body?.pipeThrough(transform), c.res);
-
-      c.res.headers.delete('Content-Length');
-      c.res.headers.append('Cache-Control', 'max-age=31536000, immutable');
-      c.res.headers.set('X-Content-Encoding', 'zstd');
-      break;
-    }
-    default: {
-      c.res.headers.append('Cache-Control', 'no-transform');
-      break;
-    }
+  if (typeof c.body === 'string') {
+    const originalBody = c.body;
+    const encodedBody = new TextEncoder().encode(originalBody);
+    const compressed = gzip(encodedBody);
+    c.res = new Response(compressed, {
+      headers: {
+        ...Object.fromEntries(c.res.headers),
+        'Cache-Control': 'max-age=31536000, immutable',
+        'Content-Encoding': 'gzip',
+      },
+    });
   }
 });
